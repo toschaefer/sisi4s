@@ -1,6 +1,8 @@
 #include <Sisi4s.hpp>
 #include <util/Yaml.hpp>
 #include <util/Tensor.hpp>
+#include <util/Exception.hpp>
+#include <algorithm>
 #include <algorithms/cc4s/DefineHolesAndParticles.hpp>
 
 namespace sisi4s {
@@ -16,15 +18,22 @@ IMPLEMENT_ALGORITHM(DefineHolesAndParticles) {
   LOG(0, "DefineHolesAndParticles")
       << "read elements: " << h.energies.size() << "\n";
 
-  const auto it = std::partition(h.energies.begin(),
-                                 h.energies.end(),
-                                 [&h](double e) { return e <= h.fermiEnergy; });
+  // The states are not reordered: the Coulomb vertex read separately uses
+  // the same state ordering as the energies, so all occupied states
+  // (e <= fermiEnergy) must come first.
+  const auto isHole = [&h](double e) { return e <= h.fermiEnergy; };
+  if (!std::is_partitioned(h.energies.begin(), h.energies.end(), isHole)) {
+    throw new EXCEPTION("DefineHolesAndParticles: energies must list all "
+                        "states with e <= fermiEnergy before all others");
+  }
+  const auto it =
+      std::partition_point(h.energies.begin(), h.energies.end(), isHole);
 
-  const TensorIndex No = it - h.energies.begin(), Nv = h.energies.size() - No,
-                    ns = NS;
+  const TensorIndex No = it - h.energies.begin(), Nv = h.energies.size() - No;
 
-  auto *epsi = new Tensor<double>(1, &ns, &No),
-       *epsa = new Tensor<double>(1, &ns, &Nv);
+  const int dense = NS;
+  auto *epsi = new Tensor<double>(1, &No, &dense, *Sisi4s::world),
+       *epsa = new Tensor<double>(1, &Nv, &dense, *Sisi4s::world);
 
   LOG(0, "DefineHolesAndParticles") << "No: " << No << "\n";
   LOG(0, "DefineHolesAndParticles") << "Nv: " << Nv << "\n";

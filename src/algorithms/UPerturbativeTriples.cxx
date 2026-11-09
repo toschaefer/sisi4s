@@ -5,6 +5,8 @@
 #include <util/Exception.hpp>
 #include <Sisi4s.hpp>
 #include <util/Tensor.hpp>
+#include <util/Emitter.hpp>
+#include <iomanip>
 
 using namespace sisi4s;
 
@@ -31,13 +33,7 @@ void UPerturbativeTriples::run() {
   int vvvooo[] = {Nv, Nv, Nv, No, No, No};
   int syms[] = {NS, NS, NS, NS, NS, NS};
   Tensor<double> SVabcijk(6, vvvooo, syms, *Vabij->wrld, "SVabcijk");
-  // TODO: erase 0.5
-  SVabcijk["abcijk"] = 0.5 * (*Tai)["ai"] * (*Vabij)["bcjk"];
-
   Tensor<double> DVabcijk(6, vvvooo, syms, *Vabij->wrld, "DVabcijk");
-  DVabcijk["abcijk"] = (*Tabij)["adij"] * (*Vabci)["bcdk"];
-  DVabcijk["abcijk"] += (-1.0) * (*Tabij)["abil"] * (*Vijka)["jklc"];
-
   Tensor<double> Tabcijk(6, vvvooo, syms, *Vabij->wrld, "Tabcijk");
 
   /* AUTOMATIC
@@ -283,7 +279,7 @@ void UPerturbativeTriples::run() {
   SVabcijk["abcijk"] += (-1.0) * (*epsa)["a"];
   SVabcijk["abcijk"] += (-1.0) * (*epsa)["b"];
   SVabcijk["abcijk"] += (-1.0) * (*epsa)["c"];
-  Bivar_Function<> fDivide(&divide<double>);
+  CTF::Bivar_Function<> fDivide(&divide<double>);
   Tabcijk.contract(1.0,
                    Tabcijk,
                    "abcijk",
@@ -293,7 +289,7 @@ void UPerturbativeTriples::run() {
                    "abcijk",
                    fDivide);
 
-  Scalar<> energy(*Sisi4s::world);
+  CTF::Scalar<> energy(*Sisi4s::world);
   energy[""] = (1.0 / 36.0) * DVabcijk["abcijk"] * Tabcijk["abcijk"];
   //  energy[""] += DVabcijk["bacjik"] * Tabcijk["abcijk"];
   //  energy[""] += DVabcijk["acbikj"] * Tabcijk["abcijk"];
@@ -307,9 +303,12 @@ void UPerturbativeTriples::run() {
   // LOG(0, "PerturbativeTriples") << "e=" << e << std::endl;
   // LOG(1, "PerturbativeTriples") << "ccsd=" << eCcsd << std::endl;
 
-  LOG(0, "PerturbativeTriples") << "triples=" << eTriples << std::endl;
+  LOG(0, "PerturbativeTriples")
+      << "triples=" << std::setprecision(12) << eTriples << std::endl;
+  EMIT() << YAML::Key << "energy" << YAML::Value << YAML::BeginMap
+         << YAML::Key << "triples" << YAML::Value << eTriples << YAML::EndMap;
 
-  setRealArgument("PerturbativeTriplesEnergy", energy);
+  setRealArgument("PerturbativeTriplesEnergy", eTriples);
 }
 
 void UPerturbativeTriples::dryRun() {

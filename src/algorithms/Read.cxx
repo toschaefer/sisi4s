@@ -13,13 +13,14 @@ namespace fs = ghc::filesystem;
 
 template <typename F>
 static Tensor<F> *new_tensor_from_dimensions(cc4s::Dimensions const &dims) {
-  std::vector<TensorIndex> lens(dims.size()), syms(dims.size(), NS);
+  std::vector<TensorIndex> lens(dims.size());
+  std::vector<int> syms(dims.size(), NS);
   std::transform(dims.begin(),
                  dims.end(),
                  lens.begin(),
                  [](cc4s::Dimension const &d) { return d.length; });
 
-  return new Tensor<F>(dims.size(), syms.data(), lens.data(), *Sisi4s::world);
+  return new Tensor<F>(dims.size(), lens.data(), syms.data(), *Sisi4s::world);
 }
 
 IMPLEMENT_ALGORITHM(Read) {

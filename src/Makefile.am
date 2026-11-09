@@ -100,7 +100,8 @@ sisi4s_SOURCES =                                                 \
 ./algorithms/CoulombIntegralsFromVertex.cxx                      \
 ./algorithms/Exit.cxx                                            \
 ./algorithms/Nop.cxx                                             \
-./algorithms/PQRSCoulombIntegralsToVertex.cxx
+./algorithms/PQRSCoulombIntegralsToVertex.cxx                   \
+./algorithms/UPerturbativeTriples.cxx
 
 if DISABLE_LIBINT
 else
@@ -116,7 +117,6 @@ sisi4s_LDADD = $(EXTERNAL_LDFLAGS)
 
 
 
-## ./algorithms/UPerturbativeTriples.cxx                            \
 ## ./algorithms/DoublesAmplitudesFromVertex.cxx                     \
 ## ./algorithms/ComplexTensorSum.cxx                                \
 ## ./algorithms/TensorContraction.cxx                               \
