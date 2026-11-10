@@ -8,6 +8,8 @@
 #include <util/Exception.hpp>
 #include <Sisi4s.hpp>
 #include <util/Tensor.hpp>
+#include <util/Emitter.hpp>
+#include <iomanip>
 
 using namespace sisi4s;
 
@@ -240,9 +242,20 @@ void CcsdPerturbativeTriples::run() {
   double eTriples(energy.get_val());
   double eCcsd(getRealArgument("CcsdEnergy"));
   double e(eCcsd + eTriples);
-  LOG(0, "CcsdPerturbativeTriples") << "e=" << e << std::endl;
-  LOG(1, "CcsdPerturbativeTriples") << "ccsd=" << eCcsd << std::endl;
-  LOG(1, "CcsdPerturbativeTriples") << "triples=" << eTriples << std::endl;
+  std::streamsize ss(std::cout.precision());
+  LOG(0, "CcsdPerturbativeTriples")
+      << std::setprecision(16) << "e=" << e << std::setprecision(ss)
+      << std::endl;
+  LOG(1, "CcsdPerturbativeTriples")
+      << std::setprecision(16) << "ccsd=" << eCcsd << std::setprecision(ss)
+      << std::endl;
+  LOG(1, "CcsdPerturbativeTriples")
+      << std::setprecision(16) << "triples=" << eTriples << std::setprecision(ss)
+      << std::endl;
+  EMIT() << YAML::Key << "energy" << YAML::Value << YAML::BeginMap
+         << YAML::Key << "triples" << YAML::Value << eTriples << YAML::Key
+         << "ccsd" << YAML::Value << eCcsd << YAML::Key << "value"
+         << YAML::Value << e << YAML::EndMap;
 
   setRealArgument("CcsdPerturbativeTriplesEnergy", e);
 }
