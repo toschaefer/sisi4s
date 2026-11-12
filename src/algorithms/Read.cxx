@@ -1,10 +1,12 @@
 #include <vector>
+#include <fstream>
 
 #include <util/Yaml.hpp>
 #include <Sisi4s.hpp>
 #include <algorithms/Read.hpp>
 #include <algorithms/TensorWriter.hpp>
 #include <util/Tensor.hpp>
+#include <util/Exception.hpp>
 #include <vendor/filesystem.hpp>
 
 namespace sisi4s {
@@ -29,6 +31,12 @@ IMPLEMENT_ALGORITHM(Read) {
 
   const auto dataPath =
       fs::path(fileName).replace_extension(fs::path("elements"));
+
+  for (auto const &f : {fs::path(fileName), dataPath}) {
+    if (!fs::exists(f)) {
+      throw new EXCEPTION("Read: file not found: " + f.string());
+    }
+  }
 
   const auto node = YAML::LoadFile(fileName);
   cc4s::ReadHeader header = node.as<cc4s::ReadHeader>();
@@ -57,21 +65,33 @@ IMPLEMENT_ALGORITHM(Read) {
     case cc4s::ElementFileType::TextFile: {
       LOG(0, "Read") << "Text tensor"
                      << "\n";
-      if (Sisi4s::world->rank == 0) {
-        std::vector<F> values(count);
-        size_t idx = 0;
-        {
-          std::ifstream s(dataPath.c_str());
-          for (std::string line; std::getline(s, line);)
-            values[idx++] = std::atof(line.c_str());
+      // every rank parses the (small) text file so that all ranks agree on
+      // errors; CTF's write is collective, so all ranks call it, but only
+      // rank 0 contributes the values
+      std::vector<F> values;
+      {
+        std::ifstream s(dataPath.c_str());
+        if (!s) {
+          throw new EXCEPTION("Read: cannot open elements file "
+                              + dataPath.string());
         }
-
-        {
-          // write to tensor
-          std::vector<TensorIndex> indices(count);
-          std::iota(indices.begin(), indices.end(), 0);
-          t->write(count, indices.data(), values.data());
+        for (std::string line; std::getline(s, line);) {
+          if (line.find_first_not_of(" \t\r") == std::string::npos) continue;
+          values.push_back(std::atof(line.c_str()));
         }
+      }
+      if (values.size() != count) {
+        std::stringstream msg;
+        msg << "Read: " << dataPath.string() << " contains " << values.size()
+            << " values, but the header dimensions give " << count;
+        throw new EXCEPTION(msg.str());
+      }
+      {
+        // write to tensor
+        const size_t n(Sisi4s::world->rank == 0 ? count : 0);
+        std::vector<TensorIndex> indices(n);
+        std::iota(indices.begin(), indices.end(), 0);
+        t->write(n, indices.data(), values.data());
       }
       break;
     }
@@ -276,7 +296,15 @@ struct convert<ReadHeader> {
     YAML_ASSERT_KEY(n, "type");
     YAML_ASSERT_KEY(n, "unit");
     YAML_ASSERT_KEY(n, "version");
-    r.version = n["version"].as<ReadHeader::Version>();
+    // some cc4s test files (NWChem CoulombVertex.yaml) contain the key twice
+    // ("version: v1.0", then "version: 100"); like cc4s, use the last one
+    std::string version;
+    for (auto const &kv : n) {
+      if (kv.first.as<std::string>() == "version") {
+        version = kv.second.as<std::string>();
+      }
+    }
+    r.version = Node(version).as<ReadHeader::Version>();
     r.type = n["type"].as<ReadableType>();
     r.dimensions = n["dimensions"].as<Dimensions>();
     r.scalarType = n["scalarType"].as<ScalarType>();

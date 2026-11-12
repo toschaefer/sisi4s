@@ -1,0 +1,47 @@
+{
+  "name": "r-BN Gamma-point, basis-set correction and (T*)",
+  "resources": [
+    {
+      "out": "EigenEnergies.yaml",
+      "uri": "{r-bn}/gamma/EigenEnergies.yaml"
+    },
+    {
+      "out": "EigenEnergies.elements",
+      "uri": "{r-bn}/gamma/EigenEnergies.elements"
+    },
+    {
+      "out": "CoulombVertex.yaml",
+      "uri": "{r-bn}/gamma/CoulombVertex.yaml"
+    },
+    {
+      "out": "CoulombVertex.elements",
+      "uri": "{r-bn}/gamma/CoulombVertex.elements"
+    },
+    {
+      "out": "DeltaIntegralsHH.yaml",
+      "uri": "{r-bn}/gamma/DeltaIntegralsHH.yaml"
+    },
+    {
+      "out": "DeltaIntegralsHH.elements",
+      "uri": "{r-bn}/gamma/DeltaIntegralsHH.elements"
+    },
+    {
+      "out": "DeltaIntegralsPPHH.yaml",
+      "uri": "{r-bn}/gamma/DeltaIntegralsPPHH.yaml"
+    },
+    {
+      "out": "DeltaIntegralsPPHH.elements",
+      "uri": "{r-bn}/gamma/DeltaIntegralsPPHH.elements"
+    },
+    {
+      "out": "Mp2PairEnergies.yaml",
+      "uri": "{r-bn}/gamma/Mp2PairEnergies.yaml"
+    },
+    {
+      "out": "Mp2PairEnergies.elements",
+      "uri": "{r-bn}/gamma/Mp2PairEnergies.elements"
+    }
+  ],
+  "tags": "vasp ccsd ccsd(t) fpc real",
+  "description": "Sisi4s BasisSetCorrection and CcsdPerturbativeTriples (T*) vs cc4s. cc4s test r-bn_gamma (correct.out.yaml, test-resources 8c7a8d34); VASP data, energies in eV."
+}

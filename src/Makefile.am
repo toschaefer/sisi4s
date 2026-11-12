@@ -73,6 +73,7 @@ sisi4s_SOURCES =                                                 \
 ./algorithms/StantonIntermediatesUCCSD.cxx                       \
 ./algorithms/ApproximateCoulombVertex.cxx                        \
 ./algorithms/CcsdPerturbativeTriples.cxx                         \
+./algorithms/BasisSetCorrection.cxx                              \
 ./algorithms/TensorNorm.cxx                                      \
 ./algorithms/TensorSum.cxx                                       \
 ./algorithms/UnrestrictedEquationOfMotionSinglesFromRpa.cxx      \

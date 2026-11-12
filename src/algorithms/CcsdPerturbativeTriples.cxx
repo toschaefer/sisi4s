@@ -123,6 +123,46 @@ void CcsdPerturbativeTriples::run() {
   Tensor<double> *epsa(getTensorArgument("ParticleEigenEnergies"));
   No = epsi->lens[0];
   Nv = epsa->lens[0];
+
+  // (T*) as in cc4s: (T*) = (T) * E_MP2^CBS / E_MP2, with E_MP2^CBS the sum
+  // of the given Mp2PairEnergies and E_MP2 from PPHHCoulombIntegrals and the
+  // eigen energies of this run (canonical orbitals)
+  const bool star(isArgumentGiven("Mp2PairEnergies"));
+  double eMp2(0.0), eMp2Cbs(0.0);
+  if (star) {
+    Tensor<double> *epsCbs(getTensorArgument("Mp2PairEnergies"));
+    if (epsCbs->order != 2 || epsCbs->lens[0] != No || epsCbs->lens[1] != No) {
+      std::stringstream s;
+      s << "CcsdPerturbativeTriples: Mp2PairEnergies has dimensions [";
+      for (int d(0); d < epsCbs->order; ++d)
+        s << (d ? "," : "") << epsCbs->lens[d];
+      s << "], expected [No,No] = [" << No << "," << No << "]";
+      throw new EXCEPTION(s.str());
+    }
+    Tensor<double> *V(getTensorArgument("PPHHCoulombIntegrals"));
+    Tensor<double> Mabij(false, *V);
+    Mabij["abij"] = (*epsi)["i"];
+    Mabij["abij"] += (*epsi)["j"];
+    Mabij["abij"] -= (*epsa)["a"];
+    Mabij["abij"] -= (*epsa)["b"];
+    CTF::Transform<double, double>(std::function<void(double, double &)>(
+        [](double v, double &d) { d = v * (1.0 / d); }))((*V)["abij"],
+                                                          Mabij["abij"]);
+    int oo[] = {No, No}, syms2[] = {NS, NS};
+    Tensor<double> pairs(2, oo, syms2, *epsi->wrld, "mp2PairEnergies");
+    pairs["ij"] = 2.0 * Mabij["abij"] * (*V)["abij"];
+    pairs["ij"] += (-1.0) * Mabij["abij"] * (*V)["abji"];
+    CTF::Scalar<double> e(*epsi->wrld);
+    e[""] = pairs["ij"];
+    eMp2 = e.get_val();
+    e[""] = (*epsCbs)["ij"];
+    eMp2Cbs = e.get_val();
+    if (eMp2 == 0.0) {
+      throw new EXCEPTION("CcsdPerturbativeTriples: the MP2 energy of the "
+                          "given integrals is 0, (T*) = (T) * MP2-CBS / MP2 "
+                          "is undefined");
+    }
+  }
   int vvv[] = {Nv, Nv, Nv};
   int syms[] = {NS, NS, NS};
   // doubles amplitudes contracted with V for current i,j,k
@@ -252,10 +292,33 @@ void CcsdPerturbativeTriples::run() {
   LOG(1, "CcsdPerturbativeTriples")
       << std::setprecision(16) << "triples=" << eTriples << std::setprecision(ss)
       << std::endl;
+  double starCorrection(0.0);
+  if (star) {
+    const double triplesStar(eMp2Cbs / eMp2 * eTriples);
+    starCorrection = triplesStar - eTriples;
+    LOG(1, "CcsdPerturbativeTriples")
+        << std::setprecision(16) << "mp2=" << eMp2 << std::setprecision(ss)
+        << std::endl;
+    LOG(1, "CcsdPerturbativeTriples")
+        << std::setprecision(16) << "mp2Cbs=" << eMp2Cbs
+        << std::setprecision(ss) << std::endl;
+    LOG(0, "CcsdPerturbativeTriples")
+        << std::setprecision(16) << "starCorrection=" << starCorrection
+        << std::setprecision(ss) << std::endl;
+    LOG(1, "CcsdPerturbativeTriples")
+        << std::setprecision(16) << "triplesStar=" << triplesStar
+        << std::setprecision(ss) << std::endl;
+  }
   EMIT() << YAML::Key << "energy" << YAML::Value << YAML::BeginMap
          << YAML::Key << "triples" << YAML::Value << eTriples << YAML::Key
          << "ccsd" << YAML::Value << eCcsd << YAML::Key << "value"
-         << YAML::Value << e << YAML::EndMap;
+         << YAML::Value << e;
+  if (star) {
+    EMIT() << YAML::Key << "starCorrection" << YAML::Value << starCorrection
+           << YAML::Key << "mp2" << YAML::Value << eMp2 << YAML::Key
+           << "mp2Cbs" << YAML::Value << eMp2Cbs;
+  }
+  EMIT() << YAML::EndMap;
 
   setRealArgument("CcsdPerturbativeTriplesEnergy", e);
 }

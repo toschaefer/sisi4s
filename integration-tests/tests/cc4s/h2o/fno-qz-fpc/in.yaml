@@ -1,0 +1,87 @@
+# vim:ft=yaml
+# Basis-set correction (cc4s BasisSetCorrection) and (T*) (starCorrection) with the cc4s test data;
+# same chain and convergence (1e-8) as the cc4s test.
+- name: DefineHolesAndParticles
+  in:
+    fileName: "EigenEnergies.yaml"
+  out:
+    HoleEigenEnergies: $HoleEigenEnergies
+    ParticleEigenEnergies: $ParticleEigenEnergies
+- name: Read
+  in:
+    fileName: "CoulombVertex.yaml"
+  out:
+    destination: $CoulombVertex
+- name: Read
+  in:
+    fileName: "DeltaIntegralsHH.yaml"
+  out:
+    destination: $DeltaIntegralsHH
+- name: Read
+  in:
+    fileName: "DeltaIntegralsPPHH.yaml"
+  out:
+    destination: $DeltaIntegralsPPHH
+- name: Read
+  in:
+    fileName: "Mp2PairEnergies.yaml"
+  out:
+    destination: $Mp2PairEnergies
+- name: CoulombIntegralsFromVertex
+  in:
+    CoulombVertex: $CoulombVertex
+    HoleEigenEnergies: $HoleEigenEnergies
+    ParticleEigenEnergies: $ParticleEigenEnergies
+    complex: 0
+  out:
+    PPHHCoulombIntegrals: $PPHHCoulombIntegrals
+    PHPHCoulombIntegrals: $PHPHCoulombIntegrals
+    HHHHCoulombIntegrals: $HHHHCoulombIntegrals
+    HHHPCoulombIntegrals: $HHHPCoulombIntegrals
+    PPPHCoulombIntegrals: $PPPHCoulombIntegrals
+    PPPPCoulombIntegrals: $PPPPCoulombIntegrals
+- name: CcsdEnergyFromCoulombIntegrals
+  in:
+    mixer: DiisMixer
+    maxResidua: 4
+    maxIterations: 100
+    energyConvergence: 1e-8
+    amplitudesConvergence: 1e-8
+    HoleEigenEnergies: $HoleEigenEnergies
+    ParticleEigenEnergies: $ParticleEigenEnergies
+    CoulombVertex: $CoulombVertex
+    PPHHCoulombIntegrals: $PPHHCoulombIntegrals
+    PPPPCoulombIntegrals: $PPPPCoulombIntegrals
+    PHPHCoulombIntegrals: $PHPHCoulombIntegrals
+    HHHHCoulombIntegrals: $HHHHCoulombIntegrals
+    HHHPCoulombIntegrals: $HHHPCoulombIntegrals
+    PPPHCoulombIntegrals: $PPPHCoulombIntegrals
+  out:
+    CcsdEnergy: $CcsdEnergy
+    CcsdSinglesAmplitudes: $CcsdSinglesAmplitudes
+    CcsdDoublesAmplitudes: $CcsdDoublesAmplitudes
+- name: BasisSetCorrection
+  in:
+    HoleEigenEnergies: $HoleEigenEnergies
+    ParticleEigenEnergies: $ParticleEigenEnergies
+    PPHHCoulombIntegrals: $PPHHCoulombIntegrals
+    CcsdSinglesAmplitudes: $CcsdSinglesAmplitudes
+    CcsdDoublesAmplitudes: $CcsdDoublesAmplitudes
+    Mp2PairEnergies: $Mp2PairEnergies
+    DeltaIntegralsPPHH: $DeltaIntegralsPPHH
+    DeltaIntegralsHH: $DeltaIntegralsHH
+  out:
+    CorrectedCcsdEnergy: $CorrectedCcsdEnergy
+- name: CcsdPerturbativeTriples
+  in:
+    CoulombVertex: $CoulombVertex
+    PPHHCoulombIntegrals: $PPHHCoulombIntegrals
+    HHHPCoulombIntegrals: $HHHPCoulombIntegrals
+    ParticleEigenEnergies: $ParticleEigenEnergies
+    HoleEigenEnergies: $HoleEigenEnergies
+    CcsdEnergy: $CcsdEnergy
+    CcsdSinglesAmplitudes: $CcsdSinglesAmplitudes
+    CcsdDoublesAmplitudes: $CcsdDoublesAmplitudes
+    Mp2PairEnergies: $Mp2PairEnergies
+  out:
+    CcsdPerturbativeTriplesEnergy: $CcsdPerturbativeTriplesEnergy
